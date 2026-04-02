@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TalkingHead Test</title>
+<style>
+  body, html { width: 100%; height: 100%; margin: 0; background: #1a1a2e; color: #fff; font-family: sans-serif; }
+  #avatar { width: 100%; height: 70vh; }
+  #controls { padding: 20px; text-align: center; }
+  input { padding: 10px; width: 300px; font-size: 16px; border-radius: 8px; border: none; }
+  button { padding: 10px 20px; font-size: 16px; border-radius: 8px; border: none; background: #059669; color: #fff; cursor: pointer; margin: 5px; }
+  #status { padding: 10px; color: #6ee7b7; }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js/+esm",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+    "talkinghead": "https://cdn.jsdelivr.net/gh/met4citizen/TalkingHead@1.7/modules/talkinghead.mjs"
+  }
+}
+</script>
+<script type="module">
+import { TalkingHead } from "talkinghead";
+
+const statusEl = document.getElementById('status');
+function log(msg) { statusEl.textContent = msg; console.log(msg); }
+
+async function init() {
+  log('TalkingHead 초기화 중...');
+  
+  try {
+    const head = new TalkingHead(document.getElementById('avatar'), {
+      lipsyncModules: ["en"],
+      cameraView: "upper"
+    });
+    
+    log('아바타 로드 중...');
+    
+    await head.showAvatar({
+      url: '/avatar.glb',
+      body: 'F',
+      avatarMood: 'neutral',
+      lipsyncLang: 'en'
+    }, (url, event) => {
+      if (event.lengthComputable) {
+        const pct = Math.round(event.loaded / event.total * 100);
+        log(`로딩... ${pct}%`);
+      }
+    });
+    
+    log('아바타 로드 완료! 텍스트를 입력하고 말하기를 누르세요.');
+    window._head = head;
+    
+    document.getElementById('speak-btn').onclick = () => {
+      const text = document.getElementById('text-input').value;
+      if (text && head) {
+        log('말하는 중...');
+        head.speakText(text, null, () => log('완료!'));
+      }
+    };
+    
+    document.getElementById('mood-happy').onclick = () => head.setMood('happy');
+    document.getElementById('mood-sad').onclick = () => head.setMood('sad');
+    document.getElementById('mood-angry').onclick = () => head.setMood('angry');
+    document.getElementById('mood-neutral').onclick = () => head.setMood('neutral');
+    
+  } catch(err) {
+    log('에러: ' + err.message);
+    console.error('TalkingHead error:', err);
+  }
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</head>
+<body>
+<div id="avatar"></div>
+<div id="controls">
+  <div id="status">로딩 중...</div>
+  <br>
+  <input id="text-input" type="text" value="안녕하세요, 만나서 반갑습니다." placeholder="텍스트 입력">
+  <button id="speak-btn">말하기</button>
+  <br><br>
+  <button id="mood-happy">😊 행복</button>
+  <button id="mood-sad">😢 슬픔</button>
+  <button id="mood-angry">😠 화남</button>
+  <button id="mood-neutral">😐 중립</button>
+</div>
+</body>
+</html>
